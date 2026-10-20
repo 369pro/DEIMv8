@@ -1,0 +1,9 @@
+# python train.py -c configs/dfine/dfine_hgnetv2_n_custom.yml --seed=0
+# python train.py -c configs/test/dfine_hgnetv2_test.yml --seed=0 -r outputs/dfine-hgnetv2-c2f-mfm-lsk/last.pth
+# python train.py -c configs/test/dfine_hgnetv2_test.yml --seed=0 -r outputs/dfine-hgnetv2-c2f-mfm-psconv2/last.pth
+# python train.py -c configs/test/dfine_hgnetv2_test.yml --seed=0 -r outputs/dfine-hgnetv2-c2f-mfm-lskopt/last.pth
+# python train.py -c configs/test/dfine_hgnetv2_test.yml --seed=0
+# python train.py -c configs/dfine/dfine_hgnetv2_s_mal_custom.yml --seed=0
+# python train.py -c configs/dfine/dfine_hgnetv2_s_mal_custom_fixed.yml --seed=0 # -r outputs/dfine_hgnetv2_s_mal_custom_fixed3/last.pth
+# python train.py -c configs/deim/deim_hgnetv2_s_custom.yml --seed=0 -r outputs/deim_hgnetv2_s_custom/last.pth
+python train.py -c configs/deim/deim_hgnetv2_n_custom.yml --seed=0

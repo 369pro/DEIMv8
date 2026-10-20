@@ -1,0 +1,93 @@
+__include__: [
+  '../dfine/dfine_hgnetv2_n_custom.yml',
+  # '../deim_dfine/deim_hgnetv2_s_tt100k.yml',
+  # 'visdrone2019.yml',
+  # '../base/deim.yml',
+]
+
+print_freq: 400
+# output_dir: ./outputs/deim-dfine-c2f-mfm-lsk
+# output_dir: ./outputs/dfine-hgnetv2-c2f-mfm-lsk
+output_dir: ./outputs/dfine-n-lite-c2f-mfm-lsk-ema
+# output_dir: ./outputs/dfine-n-pconv-ema
+# output_dir: ./outputs/dfine-n-c2f-mfm-lsk 
+# output_dir: ./outputs/dfine-n-mfm-lsk
+# output_dir: ./outputs/dfine-n-c2f
+
+model: DEIM_MG
+
+DEIM_MG:
+  # yaml_path: configs/cfg/dfine-s.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-attention.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-psconv.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-IDWB.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-RepHMS.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-hyper.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-C2f-IDWB.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-metaformer.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-hyperACE.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-hyperACE.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-MFM.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-MPCA.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-FDPN.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-FDPN.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-goldyolo.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-goldyolo-improve.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-goldyolo.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-metaformer-assa.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-p2.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-FBRT.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-HS-FPN.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-MANet.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-nnWNet.yaml
+  # yaml_path: configs/cfg-improve/dfine-efficientvit-s.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-C2f-IDWB-MFM.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-mfm-psconv.yaml
+  # yaml_path: configs/cfg-improve/dfine-s-C2f-IDWB-MFM-LSK.yaml
+  # ===================================================================
+  # yaml_path: configs/cfg-improve/dfine-n-MFM-LSK.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-C2f-IDWB.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-ema-pconv.yaml
+  # yaml_path: configs/cfg-improve/dfine-n-C2f-IDWB-MFM-LSK.yaml
+  yaml_path: configs/cfg-improve/dfine-n-C2f-IDWB-MFM-LSK-lite-EMA.yaml
+  # pretrained: weight/hgnetv2/PPHGNetV2_B0_stage1_MG.pth
+
+# optimizer:
+#   type: AdamW
+#   params: 
+#     - 
+#       params: '^(?=.*backbone)(?!.*(bn|norm)).*$'
+#       lr: 0.0002
+#     - 
+#       params: '^(?=.*(?:norm|bn)).*$'     # except bias
+#       weight_decay: 0.
+
+#   lr: 0.0004
+#   betas: [0.9, 0.999]
+#   weight_decay: 0.0001
+
+
+# # Increase to search for the optimal ema
+# epoches: 132 # 120 + 4n
+
+# ## Our LR-Scheduler
+# flat_epoch: 64    # 4 + epoch // 2, e.g., 40 = 4 + 72 / 2
+# no_aug_epoch: 12
+
+# ## Our DataAug
+# train_dataloader: 
+#   dataset: 
+#     transforms:
+#       policy:
+#         epoch: [4, 64, 120]   # list 
+
+#   collate_fn:
+#     mixup_epochs: [4, 64]
+#     stop_epoch: 120
+#   total_batch_size: 4
+# val_dataloader:
+#   total_batch_size: 4
+
+# Ensure EMA attention for HGNetv2 when running this test config
+# HGNetv2:
+#   agg: 'ema'

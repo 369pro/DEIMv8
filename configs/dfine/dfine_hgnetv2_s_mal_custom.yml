@@ -1,0 +1,114 @@
+__include__: [
+  '../dataset/sign_detection.yml',
+  '../runtime.yml',
+  '../base/dataloader_dfine.yml',
+  '../base/optimizer.yml',
+  '../base/dfine_hgnetv2.yml',
+]
+
+print_freq: 20
+output_dir: ./outputs/dfine_hgnetv2_s_mal_ema
+
+DEIM:
+  backbone: HGNetv2
+
+HGNetv2:
+  name: 'B0'
+  return_idx: [1, 2, 3]
+  freeze_at: -1
+  freeze_norm: False
+  use_lab: True
+  agg: 'ema'
+
+DFINETransformer:
+  num_layers: 3  # 4 5 6
+  eval_idx: -1  # -2 -3 -4
+
+HybridEncoder:
+  in_channels: [256, 512, 1024]
+  hidden_dim: 256
+  depth_mult: 0.34
+  expansion: 0.5
+
+optimizer:
+  type: AdamW
+  params:
+    -
+      params: '^(?=.*backbone)(?!.*norm|bn).*$'
+      lr: 0.0001
+    -
+      params: '^(?=.*backbone)(?=.*norm|bn).*$'
+      lr: 0.0001
+      weight_decay: 0.
+    -
+      params: '^(?=.*(?:encoder|decoder))(?=.*(?:norm|bn|bias)).*$'
+      weight_decay: 0.
+
+  lr: 0.0002
+  betas: [0.9, 0.999]
+  weight_decay: 0.0001
+
+# 增加训练轮数以搜索最优ema
+epoches: 200 # 120 + 4n
+train_dataloader:
+  dataset:
+    transforms:
+      ops:
+        - {type: RandomPhotometricDistort, p: 0.5}
+        - {type: RandomZoomOut, fill: 0}
+        - {type: RandomIoUCrop, p: 0.8}
+        - {type: CopyPaste, p: 0.5}  # 新增Copy-Paste增强
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: RandomHorizontalFlip}
+        - {type: Resize, size: [1024, 1024], }
+        - {type: SanitizeBoundingBoxes, min_size: 1}
+        - {type: ConvertPILImage, dtype: 'float32', scale: True}
+        - {type: ConvertBoxes, fmt: 'cxcywh', normalize: True}
+      policy:
+        name: stop_epoch
+        epoch: 164
+        ops: ['RandomPhotometricDistort', 'RandomZoomOut', 'RandomIoUCrop', 'CopyPaste']
+  collate_fn:
+    stop_epoch: 164
+    ema_restart_decay: 0.9999
+    base_size_repeat: ~
+  total_batch_size: 8
+val_dataloader:
+  total_batch_size: 8
+
+# 检查cache size
+eval_spatial_size: [1024, 1024]
+
+# 改进的匹配策略配置
+matcher:
+  type: ImprovedHungarianMatcher
+  weight_dict:
+    cost_class: 2.0
+    cost_bbox: 5.0
+    cost_giou: 2.0
+    cost_nwd: 1.0  # 新增NWD成本
+  use_focal_loss: False
+  # 改进的匹配指标参数
+  iou_alpha: 0.7  # IoU权重
+  nwd_alpha: 0.3  # NWD权重
+  use_inner_iou: True  # 使用Inner IoU
+  use_improved_matching: True  # 启用改进的匹配策略
+
+## 改进的MAL损失函数配置
+DEIMCriterion:
+  weight_dict: 
+    loss_mal: 1.0
+    loss_bbox: 5.0
+    loss_giou: 2.0
+    loss_fgl: 0.15
+    loss_ddf: 1.5
+  losses: ['mal', 'boxes', 'local']
+  gamma: 1.5
+  # MAL损失函数参数
+  mal_alpha: 0.25  # MAL损失中的alpha参数
+  no_weight_vfl_epoch: -1  # 不使用权重VFL的epoch（-1表示始终使用）
+  # 改进的匹配指标
+  use_improved_iou: True  # 使用改进的IoU计算
+  iou_alpha: 0.7  # IoU权重
+  nwd_alpha: 0.3  # NWD权重
+  use_inner_iou: True  # 使用Inner IoU替代标准IoU

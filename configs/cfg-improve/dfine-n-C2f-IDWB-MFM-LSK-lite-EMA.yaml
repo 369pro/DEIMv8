@@ -1,0 +1,46 @@
+backbone:
+  # [from, module, args]
+  - [-1, StemBlock, [16, 16, True]] # 0-P2/4
+  - [-1, HG_Stage, [16, 64, 1, 3, False, False, 3, True, 'ema']] # 1-P2/4
+  - [-1, HG_Stage, [32, 256, 1, 3, True, False, 3, True, 'ema']] # 2-P3/8
+  - [-1, HG_Stage, [64, 512, 2, 3, True, True, 5, True, 'ema']]  # 3-P4/16
+  - [-1, HG_Stage, [128, 1024, 1, 3, True, True, 5, True, 'ema']] # 4-P5/32
+
+encoder:
+  # 降低特征维度从160→112，减少约30%计算量
+  - [2, Partial_Conv, [112, 4]] # 5-P3/8 (新增P3/8尺度，n_div=8减少计算量)
+  - [3, Partial_Conv, [112, 4]] # 6-P4/16 (降低特征维度，n_div=8减少计算量)
+  - [4, Partial_Conv, [112, 4]] # 7-P5/32 (降低特征维度，n_div=8减少计算量)
+
+  # 降低Transformer配置，从640→448
+  - [-1, TransformerEncoderBlock, [8, 448, 0.1, "relu", 10000, False]] # 8-P5/32 (降低hidden_dim约30%)
+
+  # P4/16路径 - 使用MFM替代Concat，添加LSKBlock
+  - [-1, Partial_Conv, [112, 4]] # 9 (n_div=8减少计算量)
+  - [-1, nn.Upsample, [None, 2, "nearest"]] # 10
+  - [[-1, 6], MFM, [112]] # 11-P4/16 (使用MFM替代Concat)
+  - [-1, LSKBlock, []] # 12-P4/16 (添加LSKBlock增强空间特征)
+  - [-1, C2f_Block, [112, {'module':InceptionDWBlock, 'param':{'mlp_ratio': 3.0}}, 1]] # 13-P4/16 (减少层数从2→1，mlp_ratio从4.0→3.0)
+
+  # P3/8路径 - 新增高分辨率特征路径
+  - [-1, Partial_Conv, [112, 4]] # 14 (n_div=8减少计算量)
+  - [-1, nn.Upsample, [None, 2, "nearest"]] # 15
+  - [[-1, 5], MFM, [112]] # 16-P3/8 (新增P3/8特征融合)
+  - [-1, LSKBlock, []] # 17-P3/8 (LSKBlock增强空间特征)
+  - [-1, C2f_Block, [112, {'module':InceptionDWBlock, 'param':{'mlp_ratio': 3.0}}, 1]] # 18-P3/8 (减少层数)
+
+  # 增强P4/16路径
+  - [-1, SCDown, [112, 3, 2, 'silu']] # 19-P4/16
+  - [[-1, 14], MFM, [112]] # 20-P4/16 (增强特征融合)
+  - [-1, LSKBlock, []] # 21-P4/16 (LSKBlock增强空间特征)
+  - [-1, C2f_Block, [112, {'module':InceptionDWBlock, 'param':{'mlp_ratio': 3.0}}, 1]] # 22-P4/16 (减少层数)
+
+  # 增强P5/32路径
+  - [-1, SCDown, [112, 3, 2, 'silu']] # 23-P5/32
+  - [[-1, 9], MFM, [112]] # 24-P5/32 (增强特征融合)
+  - [-1, LSKBlock, []] # 25-P5/32 (LSKBlock增强空间特征)
+  - [-1, C2f_Block, [112, {'module':InceptionDWBlock, 'param':{'mlp_ratio': 3.0}}, 1]] # 26-P5/32 (减少层数)
+
+decoder:
+  # 降低hidden_dim和dim_feedforward，优化num_points
+  - [[18, 22, 26], DFINETransformer, {"feat_strides":[8, 16, 32], "hidden_dim": 112, "num_levels": 3, "num_layers": 3, "num_points": [2, 5, 2], "dim_feedforward": 448}]
